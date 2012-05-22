@@ -1,0 +1,121 @@
+PACKAGE="python-django-layoutdemo"
+export PACKAGE
+
+VERSION="0.0.1"
+export VERSION
+
+PYTHON="$(which python)"
+export PYTHON
+
+PYTHONFLAGS="-tt"
+
+if [ ! "${LAYOUTDEMO_DEBUG}" = "" ]; then
+    PYTHONFLAGS="${PYTHONFLAGS} -m pdb"
+fi
+
+export PYTHONFLAGS
+
+PYLINT="$(which pylint)"
+export PYLINT
+
+PYLINTFLAGS=
+export PYLINTFLAGS
+
+NOSETESTS="$(which nosetests)"
+export NOSETESTS
+
+NOSETESTSFLAGS="--with-coverage --cover-erase --cover-html"
+export NOSETESTSFLAGS
+
+LAYOUTDEMO_HOME=$(cd "${LAYOUTDEMO_HOME}"; pwd)
+export LAYOUTDEMO_HOME
+
+LAYOUTDEMO_BIN="${LAYOUTDEMO_HOME}"/bin
+export LAYOUTDEMO_BIN
+
+LAYOUTDEMO_ETC="${LAYOUTDEMO_HOME}"/etc
+export LAYOUTDEMO_ETC
+
+LAYOUTDEMO_LIB="${LAYOUTDEMO_HOME}"/lib
+export LAYOUTDEMO_LIB
+
+LAYOUTDEMO_SRC="${LAYOUTDEMO_HOME}"/src
+export LAYOUTDEMO_SRC
+
+LAYOUTDEMO_VAR="${LAYOUTDEMO_HOME}"/var
+export LAYOUTDEMO_VAR
+
+LAYOUTDEMO_CACHE="${LAYOUTDEMO_VAR}"/cache
+export LAYOUTDEMO_CACHE
+
+LAYOUTDEMO_DATA="${LAYOUTDEMO_VAR}"/data
+export LAYOUTDEMO_DATA
+
+LAYOUTDEMO_DB="${LAYOUTDEMO_VAR}"/db
+export LAYOUTDEMO_DB
+
+LAYOUTDEMO_LOG="${LAYOUTDEMO_VAR}"/log
+export LAYOUTDEMO_LOG
+
+LAYOUTDEMO_RUN="${LAYOUTDEMO_VAR}"/run
+export LAYOUTDEMO_RUN
+
+LAYOUTDEMO_WWW="${LAYOUTDEMO_VAR}"/www
+export LAYOUTDEMO_WWW
+
+PYTHONPATH="${LAYOUTDEMO_LIB}"/python:"${PYTHONPATH}"
+export PYTHONPATH
+
+LAYOUTDEMO_PYTHONFLAGS=
+export LAYOUTDEMO_PYTHONFLAGS
+
+LAYOUTDEMO_PYLINTFLAGS="
+    --rcfile=${LAYOUTDEMO_ETC}/pylintrc
+"
+export LAYOUTDEMO_PYLINTFLAGS
+
+LAYOUTDEMO_NOSETESTSFLAGS="
+    --cover-html-dir=${LAYOUTDEMO_HOME}/coverage
+    --cover-package=layoutdemo
+    -w ${LAYOUTDEMO_SRC}/python/layoutdemo
+"
+export LAYOUTDEMO_NOSETESTSFLAGS
+
+if [ ! -f "${LAYOUTDEMO_HOME}"/setup.cfg ]; then
+    sed -e "s#\@PREFIX\@#${LAYOUTDEMO_HOME}#g;" \
+        -e "s#\@PACKAGE\@#${PACKAGE}#g;" \
+        "${LAYOUTDEMO_HOME}"/setup.cfg.in > "${LAYOUTDEMO_HOME}"/setup.cfg
+fi
+
+if [ ! -f "${LAYOUTDEMO_ETC}"/logrotate.conf ]; then
+    cp "${LAYOUTDEMO_ETC}"/logrotate.conf.in "${LAYOUTDEMO_ETC}"/logrotate.conf
+    for PATTERNS in $(env | grep "^LAYOUTDEMO"); do
+        perl -pi -e '@xYz = split(/=/, "'${PATTERNS}'"); s#\@$xYz[0]\@#$xYz[1]#g;' \
+            "${LAYOUTDEMO_ETC}"/logrotate.conf
+    done
+fi
+
+MAINTENANCE_MODE="$(realpath ${LAYOUTDEMO_ETC}/lighttpd.conf | \
+    perl -wlne 'print $1 if /lighttpd-(\w+).conf/')"
+
+ASROOT=
+
+if [ "${MAINTENANCE_MODE}" = "production" ]; then
+    ASROOT="sudo"
+fi
+
+export ASROOT
+
+if [ ! "${LAYOUTDEMO_TESTS}" = "" ]; then
+    DJANGO_SETTINGS_MODULE="layoutdemo.tests.settings"
+else
+    DJANGO_SETTINGS_MODULE="layoutdemo.${MAINTENANCE_MODE}"
+fi
+
+export DJANGO_SETTINGS_MODULE
+
+# Local Variables:
+# indent-tabs-mode: nil
+# mode: sh
+# End:
+# vim: ai et sw=4 ts=4
